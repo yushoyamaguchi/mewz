@@ -8,3 +8,4 @@ disk.o
 target/
 *.ll
 *.o
+.zig-cache/

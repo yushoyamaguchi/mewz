@@ -100,27 +100,38 @@ pub fn build(b: *Build) !void {
 
     const kernel = b.addExecutable(.{
         .name = "mewz.elf",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .optimize = optimize,
         .target = b.resolveTargetQuery(target),
         .linkage = std.builtin.LinkMode.static,
     });
     kernel.entry = .{ .symbol_name = "boot" };
-    kernel.setLinkerScriptPath(.{ .path = "src/x64.ld" });
-    kernel.addAssemblyFile(Build.LazyPath{ .path = "src/boot.S" });
-    kernel.addAssemblyFile(Build.LazyPath{ .path = "src/interrupt.S" });
-    kernel.addObjectFile(Build.LazyPath{ .path = "build/newlib/libc.a" });
-    kernel.addObjectFile(Build.LazyPath{ .path = "build/lwip/libtcpip.a" });
-    kernel.addObjectFile(Build.LazyPath{ .path = "build/lwip/liblwipcore.a" });
-    kernel.addObjectFile(Build.LazyPath{ .path = "build/lwip/liblwipallapps.a" });
-    kernel.addCSourceFile(Build.Module.CSourceFile{ .file = Build.LazyPath{ .path = "src/c/newlib_support.c" }, .flags = &[_][]const u8{ "-I", "submodules/newlib/newlib/libc/include" } });
-    kernel.addCSourceFile(Build.Module.CSourceFile{ .file = Build.LazyPath{ .path = "src/c/lwip_support.c" }, .flags = &[_][]const u8{ "-I", "submodules/newlib/newlib/libc/include" } });
+    kernel.setLinkerScriptPath(b.path("src/x64.ld"));
+    kernel.addAssemblyFile(b.path("src/boot.S"));
+    kernel.addAssemblyFile(b.path("src/interrupt.S"));
+    kernel.addObjectFile(b.path("build/newlib/libc.a"));
+    kernel.addObjectFile(b.path("build/lwip/libtcpip.a"));
+    kernel.addObjectFile(b.path("build/lwip/liblwipcore.a"));
+    kernel.addObjectFile(b.path("build/lwip/liblwipallapps.a"));
+
+    kernel.addCSourceFile(Build.Module.CSourceFile{
+        .file = b.path("src/c/newlib_support.c"),
+        .flags = &[_][]const u8{ "-I", "submodules/newlib/newlib/libc/include" },
+    });
+
+    kernel.addCSourceFile(Build.Module.CSourceFile{
+        .file = b.path("src/c/lwip_support.c"),
+        .flags = &[_][]const u8{ "-I", "submodules/newlib/newlib/libc/include" },
+    });
+
     if (params.obj_path) |p| {
-        kernel.addObjectFile(Build.LazyPath{ .path = p });
+        kernel.addObjectFile(b.path(p));
     }
+
     if (params.dir_path) |_| {
-        kernel.addObjectFile(Build.LazyPath{ .path = "build/disk.o" });
+        kernel.addObjectFile(b.path("build/disk.o"));
     }
+
     kernel.root_module.addOptions("options", options);
     b.installArtifact(kernel);
 
